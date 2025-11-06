@@ -1,53 +1,43 @@
 package one.wabbit.levenshtein
 
 /**
- * Allows you to specify different costs for insertion, deletion, and replacement.
- * By default, all costs = 1, matching classic Levenshtein distance.
+ * Allows you to specify different costs for insertion, deletion, and replacement. By default, all
+ * costs = 1, matching classic Levenshtein distance.
  */
-data class EditCosts(
-    val insertion: Int = 1,
-    val deletion: Int = 1,
-    val replacement: Int = 1
-)
+data class EditCosts(val insertion: Int = 1, val deletion: Int = 1, val replacement: Int = 1)
 
-/**
- * Enum representing possible edit operations during Levenshtein distance calculation.
- */
+/** Enum representing possible edit operations during Levenshtein distance calculation. */
 enum class EditOperation {
     MATCH,
     REPLACE,
     INSERT,
-    DELETE
+    DELETE,
 }
 
 /**
  * Useful class to store a single edit step during reconstruction.
  *
  * @property operation One of MATCH, REPLACE, INSERT, DELETE
- * @property lhsIndex  The index in the lhs sequence that this operation refers to
- * @property rhsIndex  The index in the rhs sequence that this operation refers to
+ * @property lhsIndex The index in the lhs sequence that this operation refers to
+ * @property rhsIndex The index in the rhs sequence that this operation refers to
  */
-data class EditStep(
-    val operation: EditOperation,
-    val lhsIndex: Int,
-    val rhsIndex: Int
-)
+data class EditStep(val operation: EditOperation, val lhsIndex: Int, val rhsIndex: Int)
 
 /**
- * A “common” Levenshtein distance function using the rolling-array technique,
- * parameterized by the sequence-index test for equality and by the EditCosts.
+ * A “common” Levenshtein distance function using the rolling-array technique, parameterized by the
+ * sequence-index test for equality and by the EditCosts.
  *
- * @param lhsSize    Number of elements in lhs
- * @param rhsSize    Number of elements in rhs
- * @param isEqual    A function that returns true if lhs[i] and rhs[j] are “equal”
- * @param cost       The EditCosts for insertion, deletion, replacement
+ * @param lhsSize Number of elements in lhs
+ * @param rhsSize Number of elements in rhs
+ * @param isEqual A function that returns true if lhs[i] and rhs[j] are “equal”
+ * @param cost The EditCosts for insertion, deletion, replacement
  * @return The computed Levenshtein distance
  */
 inline fun levenshteinCommon(
     lhsSize: Int,
     rhsSize: Int,
     cost: EditCosts = EditCosts(),
-    crossinline isEqual: (Int, Int) -> Boolean
+    crossinline isEqual: (Int, Int) -> Boolean,
 ): Int {
     // Quick checks for empty/equal sequences
     if (lhsSize == 0 && rhsSize == 0) return 0
@@ -68,8 +58,8 @@ inline fun levenshteinCommon(
             val matchOrReplaceCost = if (isEqual(j - 1, i - 1)) 0 else cost.replacement
 
             val costReplace = prevRow[j - 1] + matchOrReplaceCost
-            val costInsert  = prevRow[j]     + cost.insertion
-            val costDelete  = currRow[j - 1] + cost.deletion
+            val costInsert = prevRow[j] + cost.insertion
+            val costDelete = currRow[j - 1] + cost.deletion
 
             currRow[j] = minOf(costReplace, minOf(costInsert, costDelete))
         }
@@ -86,66 +76,54 @@ inline fun levenshteinCommon(
 /**
  * Levenshtein distance for CharSequences with optional case-insensitivity.
  *
- * @param lhs        The left-hand side CharSequence
- * @param rhs        The right-hand side CharSequence
+ * @param lhs The left-hand side CharSequence
+ * @param rhs The right-hand side CharSequence
  * @param ignoreCase If true, compare characters in a case-insensitive manner
- * @param cost       EditCosts
+ * @param cost EditCosts
  * @return The computed Levenshtein distance
  */
 fun levenshtein(
     lhs: CharSequence,
     rhs: CharSequence,
     ignoreCase: Boolean = false,
-    cost: EditCosts = EditCosts()
-): Int {
-    return levenshteinCommon(
-        lhs.length,
-        rhs.length,
-        cost = cost
-    ) { i, j ->
+    cost: EditCosts = EditCosts(),
+): Int =
+    levenshteinCommon(lhs.length, rhs.length, cost = cost) { i, j ->
         if (ignoreCase) {
             lhs[i].lowercaseChar() == rhs[j].lowercaseChar()
         } else {
             lhs[i] == rhs[j]
         }
     }
-}
 
 /**
  * Levenshtein distance for arbitrary lists of E.
  *
- * @param lhs   The left-hand side list
- * @param rhs   The right-hand side list
- * @param cost  EditCosts
+ * @param lhs The left-hand side list
+ * @param rhs The right-hand side list
+ * @param cost EditCosts
  * @return The computed Levenshtein distance
  */
-fun <E> levenshtein(
-    lhs: List<E>,
-    rhs: List<E>,
-    cost: EditCosts = EditCosts()
-): Int {
-    return levenshteinCommon(
-        lhsSize = lhs.size,
-        rhsSize = rhs.size,
-        cost = cost
-    ) { i, j -> lhs[i] == rhs[j] }
-}
+fun <E> levenshtein(lhs: List<E>, rhs: List<E>, cost: EditCosts = EditCosts()): Int =
+    levenshteinCommon(lhsSize = lhs.size, rhsSize = rhs.size, cost = cost) { i, j ->
+        lhs[i] == rhs[j]
+    }
 
 /**
- * Reconstruct the path (sequence of edits) alongside computing the Levenshtein distance.
- * This uses a full 2D DP matrix for the cost, plus a 2D matrix for storing the operation.
+ * Reconstruct the path (sequence of edits) alongside computing the Levenshtein distance. This uses
+ * a full 2D DP matrix for the cost, plus a 2D matrix for storing the operation.
  *
- * @param lhs      Left-hand side list/array
- * @param rhs      Right-hand side list/array
- * @param isEqual  Equality check
- * @param cost     Edit costs
+ * @param lhs Left-hand side list/array
+ * @param rhs Right-hand side list/array
+ * @param isEqual Equality check
+ * @param cost Edit costs
  * @return A pair (distance, listOfEditSteps)
  */
 fun <T> levenshteinWithPath(
     lhs: List<T>,
     rhs: List<T>,
     cost: EditCosts = EditCosts(),
-    isEqual: (Int, Int) -> Boolean
+    isEqual: (Int, Int) -> Boolean,
 ): Pair<Int, List<EditStep>> {
     val n = lhs.size
     val m = rhs.size
@@ -170,20 +148,24 @@ fun <T> levenshteinWithPath(
         for (j in 1..n) {
             val matchOrReplace = if (isEqual(j - 1, i - 1)) 0 else cost.replacement
 
-            val delCost    = dp[i][j - 1] + cost.deletion
-            val insCost    = dp[i - 1][j] + cost.insertion
-            val replCost   = dp[i - 1][j - 1] + matchOrReplace
+            val delCost = dp[i][j - 1] + cost.deletion
+            val insCost = dp[i - 1][j] + cost.insertion
+            val replCost = dp[i - 1][j - 1] + matchOrReplace
 
             // Choose minimum among delete, insert, replace
             val minVal = minOf(delCost, minOf(insCost, replCost))
             dp[i][j] = minVal
 
             when (minVal) {
-                delCost  -> op[i][j] = EditOperation.DELETE
-                insCost  -> op[i][j] = EditOperation.INSERT
+                delCost -> op[i][j] = EditOperation.DELETE
+                insCost -> op[i][j] = EditOperation.INSERT
                 replCost -> {
-                    op[i][j] = if (matchOrReplace == 0) EditOperation.MATCH
-                    else EditOperation.REPLACE
+                    op[i][j] =
+                        if (matchOrReplace == 0) {
+                            EditOperation.MATCH
+                        } else {
+                            EditOperation.REPLACE
+                        }
                 }
             }
         }
@@ -228,14 +210,12 @@ fun <T> levenshteinWithPath(
     return distance to path
 }
 
-/**
- * Overload for CharSequence with path reconstruction.
- */
+/** Overload for CharSequence with path reconstruction. */
 fun levenshteinWithPath(
     lhs: CharSequence,
     rhs: CharSequence,
     ignoreCase: Boolean = false,
-    cost: EditCosts = EditCosts()
+    cost: EditCosts = EditCosts(),
 ): Pair<Int, List<EditStep>> {
     // We'll convert CharSequence -> List<Char> for convenience
     val lhsList = lhs.toList()
@@ -250,6 +230,6 @@ fun levenshteinWithPath(
             } else {
                 lhsList[i] == rhsList[j]
             }
-        }
+        },
     )
 }

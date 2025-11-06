@@ -1,15 +1,14 @@
 package one.wabbit.levenshtein
 
 /**
- * Costs for Damerau–Levenshtein edits.
- * In many references, transposition cost is set to 1,
- * but you can configure it here as you like.
+ * Costs for Damerau–Levenshtein edits. In many references, transposition cost is set to 1, but you
+ * can configure it here as you like.
  */
 data class DamerauEditCosts(
     val insertion: Int = 1,
     val deletion: Int = 1,
     val replacement: Int = 1,
-    val transposition: Int = 1
+    val transposition: Int = 1,
 )
 
 /** Edit operations for Damerau–Levenshtein. */
@@ -18,30 +17,30 @@ enum class DamerauEditOp {
     REPLACE,
     INSERT,
     DELETE,
-    TRANSPOSITION
+    TRANSPOSITION,
 }
 
 /** A single step in the Damerau–Levenshtein backtrack. */
 data class DamerauEditStep(
     val op: DamerauEditOp,
-    val lhsIndex: Int,     // Index in LHS to which this op applies
-    val rhsIndex: Int      // Index in RHS to which this op applies
+    val lhsIndex: Int, // Index in LHS to which this op applies
+    val rhsIndex: Int, // Index in RHS to which this op applies
 )
 
 /**
  * A "common" Damerau–Levenshtein.
  *
- * @param lhsSize  length of LHS
- * @param rhsSize  length of RHS
- * @param isEqual  (i,j) -> true if lhs[i] == rhs[j] "enough" (case-insensitive?), else false
- * @param costs    insertion, deletion, replacement, transposition
+ * @param lhsSize length of LHS
+ * @param rhsSize length of RHS
+ * @param isEqual (i,j) -> true if lhs[i] == rhs[j] "enough" (case-insensitive?), else false
+ * @param costs insertion, deletion, replacement, transposition
  * @return minimum edit distance
  */
 inline fun damerauLevenshteinCommon(
     lhsSize: Int,
     rhsSize: Int,
     crossinline isEqual: (Int, Int) -> Boolean,
-    costs: DamerauEditCosts = DamerauEditCosts()
+    costs: DamerauEditCosts = DamerauEditCosts(),
 ): Int {
     if (lhsSize == 0) return rhsSize * costs.insertion
     if (rhsSize == 0) return lhsSize * costs.deletion
@@ -73,14 +72,12 @@ inline fun damerauLevenshteinCommon(
                 // If so, consider dp[i-2][j-2] + transposition cost
                 // This "swaps" the two adjacent chars in LHS (or equivalently in RHS).
                 // cost can differ from 1 if you want custom cost for transposition
-                minCost = if (
-                    isEqual(i - 1, j - 2) &&
-                    isEqual(i - 2, j - 1)
-                ) {
-                    minOf(minCost, dp[i - 2][j - 2] + costs.transposition)
-                } else {
-                    minCost
-                }
+                minCost =
+                    if (isEqual(i - 1, j - 2) && isEqual(i - 2, j - 1)) {
+                        minOf(minCost, dp[i - 2][j - 2] + costs.transposition)
+                    } else {
+                        minCost
+                    }
             }
 
             dp[i][j] = minCost
@@ -89,16 +86,14 @@ inline fun damerauLevenshteinCommon(
     return dp[lhsSize][rhsSize]
 }
 
-/**
- * Public overload for CharSequence with optional ignoreCase.
- */
+/** Public overload for CharSequence with optional ignoreCase. */
 fun damerauLevenshteinDistance(
     lhs: CharSequence,
     rhs: CharSequence,
     ignoreCase: Boolean = false,
-    costs: DamerauEditCosts = DamerauEditCosts()
-): Int {
-    return damerauLevenshteinCommon(
+    costs: DamerauEditCosts = DamerauEditCosts(),
+): Int =
+    damerauLevenshteinCommon(
         lhs.length,
         rhs.length,
         isEqual = { i, j ->
@@ -108,9 +103,8 @@ fun damerauLevenshteinDistance(
                 lhs[i] == rhs[j]
             }
         },
-        costs
+        costs,
     )
-}
 
 /**
  * Damerau–Levenshtein with path reconstruction.
@@ -121,31 +115,28 @@ fun damerauLevenshteinWithPath(
     lhs: CharSequence,
     rhs: CharSequence,
     ignoreCase: Boolean = false,
-    costs: DamerauEditCosts = DamerauEditCosts()
+    costs: DamerauEditCosts = DamerauEditCosts(),
 ): Pair<Int, List<DamerauEditStep>> {
     val n = lhs.length
     val m = rhs.length
     if (n == 0 && m == 0) return 0 to emptyList()
     if (n == 0) {
         // purely insert all of rhs
-        return (m * costs.insertion) to List(m) { idx ->
-            DamerauEditStep(DamerauEditOp.INSERT, 0, idx)
-        }
+        return (m * costs.insertion) to
+            List(m) { idx -> DamerauEditStep(DamerauEditOp.INSERT, 0, idx) }
     }
     if (m == 0) {
         // purely delete all of lhs
-        return (n * costs.deletion) to List(n) { idx ->
-            DamerauEditStep(DamerauEditOp.DELETE, idx, 0)
-        }
+        return (n * costs.deletion) to
+            List(n) { idx -> DamerauEditStep(DamerauEditOp.DELETE, idx, 0) }
     }
 
-    fun eq(i: Int, j: Int): Boolean {
-        return if (ignoreCase) {
+    fun eq(i: Int, j: Int): Boolean =
+        if (ignoreCase) {
             lhs[i].lowercaseChar() == rhs[j].lowercaseChar()
         } else {
             lhs[i] == rhs[j]
         }
-    }
 
     // dp & op tables
     val dp = Array(n + 1) { IntArray(m + 1) }

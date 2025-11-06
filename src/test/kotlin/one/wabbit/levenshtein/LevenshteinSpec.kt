@@ -3,10 +3,8 @@ package one.wabbit.levenshtein
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.test.assertNotNull
 
 class LevenshteinSpec {
-
     @Test
     fun testEmptyStrings() {
         assertEquals(0, levenshtein("", ""), "Both empty => distance = 0")
@@ -17,7 +15,11 @@ class LevenshteinSpec {
     @Test
     fun testIdenticalStrings() {
         assertEquals(0, levenshtein("test", "test"), "Identical strings => distance = 0")
-        assertEquals(0, levenshtein(listOf(1, 2, 3), listOf(1, 2, 3)), "Identical lists => distance = 0")
+        assertEquals(
+            0,
+            levenshtein(listOf(1, 2, 3), listOf(1, 2, 3)),
+            "Identical lists => distance = 0",
+        )
     }
 
     @Test
@@ -58,7 +60,8 @@ class LevenshteinSpec {
         assertEquals(0, levenshtein("abc", "abc", cost = highReplaceCost))
 
         // "abc" -> "abd" => only difference is c->d
-        // with replacement cost=10, it might be cheaper to delete 'c' and insert 'd' if insertion + deletion < 10
+        // with replacement cost=10, it might be cheaper to delete 'c' and insert 'd' if insertion +
+        // deletion < 10
         // default insertion=1, deletion=1 => total = 2 is cheaper than 10
         val dist = levenshtein("abc", "abd", cost = highReplaceCost)
         assertEquals(2, dist, "Cheaper to delete + insert than to replace if replacement=10")
@@ -85,11 +88,7 @@ class LevenshteinSpec {
     fun testPathReconstructionLists() {
         val lhs = listOf(1, 2, 3)
         val rhs = listOf(2, 2, 4)
-        val (dist, path) = levenshteinWithPath(
-            lhs,
-            rhs,
-            isEqual = { i, j -> lhs[i] == rhs[j] }
-        )
+        val (dist, path) = levenshteinWithPath(lhs, rhs, isEqual = { i, j -> lhs[i] == rhs[j] })
         assertEquals(2, dist, "Distance = 2 as reasoned earlier")
         // Let's do a light verification that we have 2 non-MATCH operations
         val actualEdits = path.count { it.operation != EditOperation.MATCH }
@@ -144,8 +143,6 @@ class LevenshteinSpec {
         assertEquals(0, dist)
         // Expect exactly 3 matches, no other ops
         assertEquals(3, path.size)
-        path.forEach { step ->
-            assertEquals(EditOperation.MATCH, step.operation)
-        }
+        path.forEach { step -> assertEquals(EditOperation.MATCH, step.operation) }
     }
 }
